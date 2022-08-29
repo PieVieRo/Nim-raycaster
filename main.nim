@@ -1,15 +1,25 @@
 import math
+import strformat
 import opengl, opengl/[glu, glut]
 
 
 
-var playerX, playerY: float
+var 
+    playerX, playerY: float
+    playerDX, playerDY: float
+    playerAngle: float
 
 proc drawPlayer() =
     glColor3f(1,1,0)
     glPointSize(8)
     glBegin(GL_POINTS)
     glVertex2f(playerX, playerY)
+    glEnd()
+
+    glLineWidth(3)
+    glBegin(GL_LINES)
+    glVertex2f(playerX, playerY)
+    glVertex2f(playerX+playerDX*5, playerY+playerDY*5)
     glEnd()
 
 
@@ -32,6 +42,7 @@ var map = [
 proc drawMap2D() =
     var x,y: int
     var xo,yo: GLint
+    # FYI I tried doing it with for loops but it didn't work
     while y < mapY:
         while x < mapX:
             if map[y * mapX + x] == 1:
@@ -51,14 +62,28 @@ proc drawMap2D() =
         inc y
 
 proc buttons(key:int8, x, y: cint) {.cdecl} =
-    const keyA = 97
-    const keyS = 115
-    const keyD = 100
-    const keyW = 119
-    if key == keyA: playerX-=5
-    if key == keyD: playerX+=5
-    if key == keyS: playerY+=5
-    if key == keyW: playerY-=5
+    const 
+        keyA = 97
+        keyS = 115
+        keyD = 100
+        keyW = 119
+
+    if key == keyA: 
+        playerAngle-=0.1
+        if playerAngle < 0: playerAngle+=2*PI
+        playerDX = cos(playerAngle)*5
+        playerDY = sin(playerAngle)*5
+    if key == keyD: 
+        playerAngle+=0.1
+        if playerAngle > 2*PI: playerAngle-=2*PI
+        playerDX = cos(playerAngle)*5
+        playerDY = sin(playerAngle)*5
+    if key == keyW: 
+        playerX += playerDX
+        playerY += playerDY
+    if key == keyS: 
+        playerX -= playerDX
+        playerY -= playerDY
     glutPostRedisplay()
     
 
@@ -73,6 +98,10 @@ proc init() =
     gluOrtho2D(0,1024,512,0)
     playerX = 300
     playerY = 300
+    playerDX = cos(playerAngle)*5
+    playerDY = sin(playerAngle)*5
+    echo playerDX
+    echo playerDY
 
 var argc: cint = 0
 glutInit(addr argc, nil)
