@@ -2,8 +2,6 @@ import math
 import strformat
 import opengl, opengl/[glu, glut]
 
-
-
 var 
     playerX, playerY: float
     playerDX, playerDY: float
@@ -61,6 +59,20 @@ proc drawMap2D() =
         x = 0
         inc y
 
+# after countless hours of debugging i've given up and wrote that in C
+proc calculateRays(playerX: float, playerY: float, playerAngle: float, mapX: int, mapY: int, map: array[64, int], rayLocation: array[2, float]) {.importc, varargs, header:"calcRays.h"}
+proc drawRays2D() =
+    var rayLocation: array[2, float]
+    echo &"before {rayLocation[0]} {rayLocation[1]}"
+    calculateRays(playerX, playerY, playerAngle, mapX, mapY, map, rayLocation)
+    echo &"after {rayLocation[0]} {rayLocation[1]}"
+    glColor3f(0,1,0)
+    glLineWidth(1)
+    glBegin(GL_LINES)
+    glVertex2f(playerX, playerY)
+    glvertex2f(rayLocation[0], rayLocation[1])
+    glEnd()
+
 proc buttons(key:int8, x, y: cint) {.cdecl} =
     const 
         keyA = 97
@@ -91,6 +103,7 @@ proc display() {.cdecl} =
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
     drawMap2D()
     drawPlayer()
+    drawRays2D()
     glutSwapBuffers()
 
 proc init() =
@@ -100,8 +113,6 @@ proc init() =
     playerY = 300
     playerDX = cos(playerAngle)*5
     playerDY = sin(playerAngle)*5
-    echo playerDX
-    echo playerDY
 
 var argc: cint = 0
 glutInit(addr argc, nil)
