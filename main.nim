@@ -6,6 +6,7 @@ const
     P2:float = PI/2
     P3:float = 3.0*P2
 
+
 var 
     playerX, playerY: float
     playerDX, playerDY: float
@@ -69,9 +70,8 @@ proc distance(ax:float, ay:float, bx:float, by:float, angle:float):float =
 
 proc drawRays2D() = 
     var 
-        mx, my, mp: int
+        mx, my, mp, depth: int
         xo, yo, rayAngle, rayX, rayY: float
-        depth {.volatile}: int
     rayAngle = playerAngle
     for ray in 0 ..< 1:
         # check horizontal lines
