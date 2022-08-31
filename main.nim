@@ -5,7 +5,7 @@ import opengl, opengl/[glu, glut]
 const
     P2:float = PI/2
     P3:float = 3.0*P2
-
+    DR:float = 0.0174532925 # one degree in radians
 
 var 
     playerX, playerY: float
@@ -72,8 +72,15 @@ proc drawRays2D() =
     var 
         mx, my, mp, depth: int
         xo, yo, rayAngle, rayX, rayY: float
-    rayAngle = playerAngle
-    for ray in 0 ..< 1:
+
+    rayAngle = playerAngle - DR * 30
+    if rayAngle < 0:
+        rayAngle += 2*PI
+    if rayAngle > 2*PI:
+        rayAngle -= 2*PI
+
+    for ray in 0 ..< 60:
+
         # check horizontal lines
         depth = 0
         var
@@ -81,6 +88,7 @@ proc drawRays2D() =
             hx:float = playerX
             hy:float = playerY
         var aTan:float = -1 / tan(rayAngle)
+
         if rayAngle > PI: # check down
             rayY = ((playerY.int shr 6) shl 6).toFloat - 0.0001
             rayX = (playerY - rayY) * aTan + playerX
@@ -95,10 +103,12 @@ proc drawRays2D() =
             rayX = playerX
             rayY = playerY
             depth = 8
+
         while depth < 8:
             mx = rayX.int shr 6
             my = rayY.int shr 6
             mp = my * mapX + mx
+
             if mp < mapX * mapY and mp > 0:
                 if map[mp]==1:
                     depth = 8
@@ -121,6 +131,7 @@ proc drawRays2D() =
             vx:float = playerX
             vy:float = playerY
         var nTan:float = -tan(rayAngle)
+
         if rayAngle > P2 and rayAngle < P3: # check left
             rayX = ((playerX.int shr 6) shl 6).toFloat - 0.0001
             rayY = (playerX - rayX) * nTan + playerY
@@ -135,10 +146,12 @@ proc drawRays2D() =
             rayX = playerX
             rayY = playerY
             depth = 8
+
         while depth < 8:
             mx = rayX.int shr 6
             my = rayY.int shr 6
             mp = my * mapX + mx
+
             if mp < mapX * mapY and mp > 0:
                 if map[mp]==1:
                     depth = 8
@@ -159,12 +172,19 @@ proc drawRays2D() =
         else:
             rayX = hx
             rayY = hy
+
         glColor3f(1,0,0)
         glLineWidth(3)
         glBegin(GL_LINES)
         glVertex2f(playerX, playerY)
         glvertex2f(rayX, rayY)
         glEnd()
+
+        rayAngle += DR
+        if rayAngle < 0:
+            rayAngle += 2*PI
+        if rayAngle > 2*PI:
+            rayAngle -= 2*PI
 
 proc buttons(key:int8, x, y: cint) {.cdecl} =
     const 
