@@ -2,6 +2,10 @@ import math
 import strformat
 import opengl, opengl/[glu, glut]
 
+const
+    P2:float = PI/2
+    P3:float = 3.0*P2
+
 var 
     playerX, playerY: float
     playerDX, playerDY: float
@@ -59,6 +63,10 @@ proc drawMap2D() =
         x = 0
         inc y
 
+proc distance(ax:float, ay:float, bx:float, by:float, angle:float):float =
+    return sqrt((bx-ax) * (bx-ax) + (by-ay) * (by-ay))
+
+
 proc drawRays2D() = 
     var 
         mx, my, mp: int
@@ -66,19 +74,24 @@ proc drawRays2D() =
         depth {.volatile}: int
     rayAngle = playerAngle
     for ray in 0 ..< 1:
+        # check horizontal lines
         depth = 0
+        var
+            disH:float = 100000000
+            hx:float = playerX
+            hy:float = playerY
         var aTan:float = -1 / tan(rayAngle)
-        if rayAngle > PI:
+        if rayAngle > PI: # check down
             rayY = ((playerY.int shr 6) shl 6).toFloat - 0.0001
             rayX = (playerY - rayY) * aTan + playerX
             yo = -64
             xo = -yo * aTan
-        if rayAngle < PI:
+        if rayAngle < PI: # check up
             rayY = ((playerY.int shr 6) shl 6).toFloat + 64.0
             rayX = (playerY - rayY) * aTan + playerX
             yo = 64
             xo = -yo * aTan            
-        if rayAngle == 0 or rayAngle == PI:
+        if rayAngle == 0 or rayAngle == PI: # check left and right
             rayX = playerX
             rayY = playerY
             depth = 8
@@ -89,6 +102,9 @@ proc drawRays2D() =
             if mp < mapX * mapY and mp > 0:
                 if map[mp]==1:
                     depth = 8
+                    hx=rayX
+                    hy=rayY
+                    disH=distance(playerX,playerY,hx,hy,rayAngle)
                 else:
                     rayX += xo
                     rayY += yo
@@ -97,12 +113,58 @@ proc drawRays2D() =
                 rayX += xo
                 rayY += yo
                 inc depth
-    glColor3f(0,1,0)
-    glLineWidth(1)
-    glBegin(GL_LINES)
-    glVertex2f(playerX, playerY)
-    glvertex2f(rayX, rayY)
-    glEnd()
+
+      # check vertical lines
+        depth = 0
+        var
+            disV:float = 100000000
+            vx:float = playerX
+            vy:float = playerY
+        var nTan:float = -tan(rayAngle)
+        if rayAngle > P2 and rayAngle < P3: # check left
+            rayX = ((playerX.int shr 6) shl 6).toFloat - 0.0001
+            rayY = (playerX - rayX) * nTan + playerY
+            xo = -64
+            yo = -xo * nTan
+        if rayAngle < P2 or rayAngle > P3: # check right
+            rayX = ((playerX.int shr 6) shl 6).toFloat + 64.0
+            rayY = (playerX - rayX) * nTan + playerY
+            xo = 64
+            yo = -xo * nTan            
+        if rayAngle == 0 or rayAngle == PI: # check up and down
+            rayX = playerX
+            rayY = playerY
+            depth = 8
+        while depth < 8:
+            mx = rayX.int shr 6
+            my = rayY.int shr 6
+            mp = my * mapX + mx
+            if mp < mapX * mapY and mp > 0:
+                if map[mp]==1:
+                    depth = 8
+                    vx=rayX
+                    vy=rayY
+                    disV=distance(playerX,playerY,vx,vy,rayAngle)
+                else:
+                    rayX += xo
+                    rayY += yo
+                    inc depth
+            else:
+                rayX += xo
+                rayY += yo
+                inc depth
+        if disV < disH:
+            rayX = vx
+            rayY = vy
+        else:
+            rayX = hx
+            rayY = hy
+        glColor3f(1,0,0)
+        glLineWidth(3)
+        glBegin(GL_LINES)
+        glVertex2f(playerX, playerY)
+        glvertex2f(rayX, rayY)
+        glEnd()
 
 proc buttons(key:int8, x, y: cint) {.cdecl} =
     const 
@@ -133,8 +195,8 @@ proc buttons(key:int8, x, y: cint) {.cdecl} =
 proc display() {.cdecl} =
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
     drawMap2D()
-    drawPlayer()
     drawRays2D()
+    drawPlayer()
     glutSwapBuffers()
 
 proc init() =
