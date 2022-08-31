@@ -59,18 +59,49 @@ proc drawMap2D() =
         x = 0
         inc y
 
-# after countless hours of debugging i've given up and wrote that in C
-proc calculateRays(playerX: float, playerY: float, playerAngle: float, mapX: int, mapY: int, map: array[64, int], rayLocation: array[2, float]) {.importc, varargs, header:"calcRays.h"}
-proc drawRays2D() =
-    var rayLocation: array[2, float]
-    echo &"before {rayLocation[0]} {rayLocation[1]}"
-    calculateRays(playerX, playerY, playerAngle, mapX, mapY, map, rayLocation)
-    echo &"after {rayLocation[0]} {rayLocation[1]}"
+proc drawRays2D() = 
+    var 
+        mx, my, mp: int
+        xo, yo, rayAngle, rayX, rayY: float
+        depth {.volatile}: int
+    rayAngle = playerAngle
+    for ray in 0 ..< 1:
+        depth = 0
+        var aTan:float = -1 / tan(rayAngle)
+        if rayAngle > PI:
+            rayY = ((playerY.int shr 6) shl 6).toFloat - 0.0001
+            rayX = (playerY - rayY) * aTan + playerX
+            yo = -64
+            xo = -yo * aTan
+        if rayAngle < PI:
+            rayY = ((playerY.int shr 6) shl 6).toFloat + 64.0
+            rayX = (playerY - rayY) * aTan + playerX
+            yo = 64
+            xo = -yo * aTan            
+        if rayAngle == 0 or rayAngle == PI:
+            rayX = playerX
+            rayY = playerY
+            depth = 8
+        while depth < 8:
+            mx = rayX.int shr 6
+            my = rayY.int shr 6
+            mp = my * mapX + mx
+            if mp < mapX * mapY and mp > 0:
+                if map[mp]==1:
+                    depth = 8
+                else:
+                    rayX += xo
+                    rayY += yo
+                    inc depth
+            else:
+                rayX += xo
+                rayY += yo
+                inc depth
     glColor3f(0,1,0)
     glLineWidth(1)
     glBegin(GL_LINES)
     glVertex2f(playerX, playerY)
-    glvertex2f(rayLocation[0], rayLocation[1])
+    glvertex2f(rayX, rayY)
     glEnd()
 
 proc buttons(key:int8, x, y: cint) {.cdecl} =
