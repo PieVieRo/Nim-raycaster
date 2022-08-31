@@ -68,10 +68,10 @@ proc distance(ax:float, ay:float, bx:float, by:float, angle:float):float =
     return sqrt((bx-ax) * (bx-ax) + (by-ay) * (by-ay))
 
 
-proc drawRays2D() = 
+proc drawRays3D() = 
     var 
         mx, my, mp, depth: int
-        xo, yo, rayAngle, rayX, rayY: float
+        xo, yo, rayAngle, rayX, rayY, disT: float
 
     rayAngle = playerAngle - DR * 30
     if rayAngle < 0:
@@ -166,18 +166,39 @@ proc drawRays2D() =
                 rayX += xo
                 rayY += yo
                 inc depth
+
         if disV < disH:
             rayX = vx
             rayY = vy
+            disT = disV
+            glColor3f(0.9,0,0)
         else:
             rayX = hx
             rayY = hy
-
-        glColor3f(1,0,0)
+            disT = disH
+            glColor3f(0.7,0,0)
+            
         glLineWidth(3)
         glBegin(GL_LINES)
         glVertex2f(playerX, playerY)
         glvertex2f(rayX, rayY)
+        glEnd()
+
+        # draw 3D walls
+        var ca:float = playerAngle - rayAngle
+        if ca < 0:
+            ca += 2*PI
+        if ca > 2*PI:
+            ca -= 2*PI
+        disT = disT*cos(ca)
+        var 
+            lineHeight:float =(mapS*320).toFloat / disT
+            lineOffset:float = 160 - lineHeight/2
+        if lineHeight > 320: lineHeight = 320
+        glLineWidth(8)
+        glBegin(GL_LINES)
+        glVertex2i((ray*8+530).GLint, lineOffset.GLint)
+        glVertex2i((ray*8+530).GLint, (lineHeight+lineOffset).GLint)
         glEnd()
 
         rayAngle += DR
@@ -215,7 +236,7 @@ proc buttons(key:int8, x, y: cint) {.cdecl} =
 proc display() {.cdecl} =
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
     drawMap2D()
-    drawRays2D()
+    drawRays3D()
     drawPlayer()
     glutSwapBuffers()
 
